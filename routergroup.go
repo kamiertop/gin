@@ -77,6 +77,15 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	}
 }
 
+func (group *RouterGroup) GroupEX(relativePath string, name string, handlers ...HandlerFunc) *RouterGroup {
+	api.setGroup(group.basePath, group.calculateAbsolutePath(relativePath), name)
+	return &RouterGroup{
+		Handlers: group.combineHandlers(handlers),
+		basePath: group.calculateAbsolutePath(relativePath),
+		engine:   group.engine,
+	}
+}
+
 // BasePath returns the base path of router group.
 // For example, if v := router.Group("/rest/n/v1/api"), v.BasePath() is "/rest/n/v1/api".
 func (group *RouterGroup) BasePath() string {
@@ -90,9 +99,9 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 	return group.returnObj()
 }
 
-func (group *RouterGroup) handleRouteName(httpMethod, relativePath, name string, handlers HandlersChain) IRoutes {
+func (group *RouterGroup) handleWithRouteName(httpMethod, relativePath, name string, handlers HandlersChain) IRoutes {
 	absolutePath := group.calculateAbsolutePath(relativePath)
-	setRouteName(httpMethod, absolutePath, name)
+	api.setRoute(httpMethod, group.basePath, absolutePath, name)
 	handlers = group.combineHandlers(handlers)
 	group.engine.addRoute(httpMethod, absolutePath, handlers)
 	return group.returnObj()
@@ -120,8 +129,8 @@ func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRo
 	return group.handle(http.MethodPost, relativePath, handlers)
 }
 
-func (group *RouterGroup) POSTEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodPost, relativePath, name, handlers)
+func (group *RouterGroup) POSTEX(relativePath string, routeName string, handlers ...HandlerFunc) IRoutes {
+	return group.handleWithRouteName(http.MethodPost, relativePath, routeName, handlers)
 }
 
 // GET is a shortcut for router.Handle("GET", path, handlers).
@@ -129,8 +138,8 @@ func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRou
 	return group.handle(http.MethodGet, relativePath, handlers)
 }
 
-func (group *RouterGroup) GETEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodGet, relativePath, name, handlers)
+func (group *RouterGroup) GETEX(relativePath string, routeName string, handlers ...HandlerFunc) IRoutes {
+	return group.handleWithRouteName(http.MethodGet, relativePath, routeName, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handlers).
@@ -138,8 +147,8 @@ func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) I
 	return group.handle(http.MethodDelete, relativePath, handlers)
 }
 
-func (group *RouterGroup) DELETEEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodDelete, relativePath, name, handlers)
+func (group *RouterGroup) DELETEEX(relativePath string, routeName string, handlers ...HandlerFunc) IRoutes {
+	return group.handleWithRouteName(http.MethodDelete, relativePath, routeName, handlers)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handlers).
@@ -147,8 +156,8 @@ func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) IR
 	return group.handle(http.MethodPatch, relativePath, handlers)
 }
 
-func (group *RouterGroup) PATCHEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodPatch, relativePath, name, handlers)
+func (group *RouterGroup) PATCHEX(relativePath string, routeName string, handlers ...HandlerFunc) IRoutes {
+	return group.handleWithRouteName(http.MethodPatch, relativePath, routeName, handlers)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handlers).
@@ -156,8 +165,8 @@ func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) IRou
 	return group.handle(http.MethodPut, relativePath, handlers)
 }
 
-func (group *RouterGroup) PUTEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodPut, relativePath, name, handlers)
+func (group *RouterGroup) PUTEX(relativePath string, routeName string, handlers ...HandlerFunc) IRoutes {
+	return group.handleWithRouteName(http.MethodPut, relativePath, routeName, handlers)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handlers).
@@ -165,17 +174,9 @@ func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) 
 	return group.handle(http.MethodOptions, relativePath, handlers)
 }
 
-func (group *RouterGroup) OPTIONSEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodOptions, relativePath, name, handlers)
-}
-
 // HEAD is a shortcut for router.Handle("HEAD", path, handlers).
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodHead, relativePath, handlers)
-}
-
-func (group *RouterGroup) HEADEX(relativePath, name string, handlers ...HandlerFunc) IRoutes {
-	return group.handleRouteName(http.MethodHead, relativePath, name, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.

@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 )
@@ -1264,4 +1265,10 @@ func (c *Context) Value(key any) any {
 		return nil
 	}
 	return c.Request.Context().Value(key)
+}
+
+func (c *Context) SuccessOK() {
+	c.JSON(http.StatusOK, H{
+		"msg": "ok",
+	})
 }
